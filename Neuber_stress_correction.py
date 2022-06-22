@@ -1,6 +1,17 @@
+from unittest.mock import call
 import pylab
 from os import system
 from isotropic_material import Mat
+
+# Calls counter decorator
+def tracer(cls):
+    def inner(*args):
+        nonlocal calls
+        calls+=1
+        print(f"wywolanie: {calls}")
+        return cls(*args)
+    calls = 0
+    return inner
 
 class MatNameError (Exception):
     pass
@@ -12,7 +23,10 @@ class UltStrError (Exception):
     pass
 class ElongationError (Exception):
     pass
+
+
 class Peak_stress_Mat (Mat):
+    @tracer
     def __init__(self, mat_name, Ftu, Fty, elongation, E, peak):
         Mat.__init__(self, mat_name, Ftu, Fty, elongation, E)
         self.peak_stress= peak 
@@ -138,8 +152,8 @@ while True:
             while True:
                 try:
                     peak_stress = float (input("Give linear peak stress (MPa): "))
-                    Mat_wp= Peak_stress_Mat(mat_name, Ftu, Fty, u, E, peak_stress)
-                    print("ok")
+                    mat_wp= Peak_stress_Mat("2024", 440., 340., 8., 70000., peak_stress)
+                    print(f"case no.: {tracer.__dir__} ")
                     break
                 except ValueError:
                     print ("ValueError: Invalid Value.\nTry once again.\n")
