@@ -1,5 +1,3 @@
-from unittest.mock import call
-from numpy import append
 import pylab
 from os import system
 from isotropic_material import Mat
@@ -88,6 +86,7 @@ def generate_chart(Y=Mat("2024-T72", 470, 300, 11, 71000)):
     pylab.plot(Y.peak_strain, Y.peak_stress, 'g', marker=".", markersize=10)
     pylab.plot(Y.generate_constant_strain_energy(), Y.generate_hooke_stress()[1::], 'k', linestyle = 'dashed')
     pylab.plot(Y.calculate_corrected_stress()[0], Y.calculate_corrected_stress()[1], 'r', marker=".", markersize=10)
+    pylab.annotate(f"stress: {round(Y.calculate_corrected_stress()[1],1)} [MPa]\nstrain: {round(Y.calculate_corrected_stress()[0],5)} [-]",(1.2*Y.calculate_corrected_stress()[0], 0.85*Y.calculate_corrected_stress()[1]) )
     pylab.legend(['Engineering Stress-Strain','Linear Hooke\'s Stress-Strain','Ultimate Stregnth','Peak Stress Point', 'Constant Strain Energy'], loc='lower right', shadow=True, fontsize='medium', title='Legend')
     pylab.ylim(0., 1.1*max(Y.generate_hooke_stress()))
     pylab.ylabel("Stress [MPa]")
@@ -193,9 +192,13 @@ while True:
                 try:
                     peak_stress = float (input("Give linear peak stress (MPa): "))
                     mat_wp= PeakStressMat(peak_stress, "2024", 440., 340., 8., 70000.)
-                    x = mat_wp.calculate_corrected_stress()
-                    print(f"strain = {x[0]}, stress = {x[1]} ")
+                    neuber_correction_point = mat_wp.calculate_corrected_stress()
+                    neuber_strain = round(neuber_correction_point[0],5)
+                    neuber_stress = round(neuber_correction_point[1],1)
+                    print(f"strain = {neuber_strain}, stress = {neuber_stress} ")
+                    
                     print(f"case no.: {PeakStressMat.counter} ")
+
                     generate_chart (mat_wp)
                     break
                 except ValueError:
