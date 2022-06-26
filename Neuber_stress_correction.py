@@ -22,7 +22,7 @@ class PeakStressMat(Mat):
         self.peak_stress= peak 
         self.peak_strain = self.peak_stress/self.E
         self._strain_energy = self.peak_stress*self.peak_strain
-    
+       
     def generate_hooke_stress(self):
         return [n for n in range(0, int(self.peak_stress*1.05), 1)]
     
@@ -93,13 +93,25 @@ def generate_chart(Y=Mat("2024-T72", 470, 300, 11, 71000)):
     pylab.xlim(0., 1.1*max(Y.generate_r_o_strain()))
     pylab.xlabel("Strain [-]") 
     pylab.grid(True)  
-    pylab.savefig(str(Y.mat_name)+".jpg", dpi = 720) 
+    pylab.savefig(f"case_{PeakStressMat.counter}_plot.jpg", dpi = 720) 
     pylab.show()
 
-def generate_text_file(X=Mat("2024-T72", 470, 300, 11, 71000)):
-    file = open(X.mat_name+".txt","w")
-    file.write(str(X)+"\n")
-    file.write("Row Number\tEngineering Strain\tEngineering Stress\tTrue Strain\tTrue Stress \n")
+def generate_text_file(input_dict):
+    file = open(f"Stress_summary.txt","w")
+    for i in range(len(input_dict)):
+
+        file.write(f"      CASE {i+1}\n\n")
+        file.write(str(input_dict[i+1][0]))
+        file.write(f"\n\nNeuber's stress correction:\n   Preak stress = {input_dict[i+1][0].peak_stress}MPa\n")
+        file.write(f"   Strain = {input_dict[i+1][1]*100}\n")
+        file.write(f"   Stress = {input_dict[i+1][2]}MPa\n")
+        file.write(f"   RF_strain = {input_dict[i+1][3]}\n")
+        file.write(f"   RF_lim_stress = {input_dict[i+1][4]}\n")
+        file.write(f"   RF_ult_stress = {input_dict[i+1][5]}\n")
+        file.write("_"*20+"\n\n")
+
+    """ 
+        file.write("Row Number\tEngineering Strain\tEngineering Stress\tTrue Strain\tTrue Stress \n")
     i=0
     while i < len(X.generate_stress_list()):
         e_strain = "{:.3e}".format(X.generate_r_o_strain()[i])
@@ -108,13 +120,12 @@ def generate_text_file(X=Mat("2024-T72", 470, 300, 11, 71000)):
         tr_stress = "{:.3e}".format(X.generate_true_stress()[i])
         file.write(str(i+1)+"\t"+str(e_strain)+"\t"+str(e_stress)+"\t"+str(tr_strain)+"\t"+str(tr_stress)+"\n")
         i+=1
-    
+     """
     file.close()
 
 print("Required units are given in brackets \n")
-
-Results_list =[] #list of results declared for further usege in output file generation
-
+results_list =[] #list of results declared for further usege in output file generation
+res_case ={} #dictionary where case number is key and results_list items are items
 while True:
     print("\nMenu:\n")
     print("1. Generate new material curve")
@@ -195,6 +206,11 @@ while True:
                     neuber_correction_point = mat_wp.calculate_corrected_stress()
                     neuber_strain = round(neuber_correction_point[0],5)
                     neuber_stress = round(neuber_correction_point[1],1)
+                    rf_strain = round(mat_wp.elongation/(100*neuber_correction_point[0]),2)
+                    rf_yield_stress = round(mat_wp.Fty/neuber_correction_point[1],2)
+                    rf_ult_stress = round(mat_wp.Ftu/neuber_correction_point[1],2)
+                    results_list.append((mat_wp, neuber_strain, neuber_stress, rf_strain, rf_yield_stress, rf_ult_stress))
+                    res_case [PeakStressMat.counter] = results_list[-1]
                     print(f"strain = {neuber_strain}, stress = {neuber_stress} ")
                     
                     print(f"case no.: {PeakStressMat.counter} ")
@@ -211,9 +227,7 @@ while True:
                     break
             
         case 3:
-            try:
-                generate_text_file(material)
-            except NameError:
-                generate_text_file()
+            generate_text_file(res_case)
+            
         case 4:
             break
