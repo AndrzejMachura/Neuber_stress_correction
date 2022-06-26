@@ -16,32 +16,37 @@ class ElongationError (Exception):
     pass
 
 @InstanceTracker
-class PeakStressMat (Mat):
+class PeakStressMat(Mat):
     
-    def __init__(self, mat_name, Ftu, Fty, elongation, E, peak):
-        Mat.__init__(self, mat_name, Ftu, Fty, elongation, E)
+    def __init__(self, peak, *arguments):
+        Mat.__init__(self, *arguments)
         self.peak_stress= peak 
     
-    def generate_hooke_stess(self):
+    def generate_hooke_stress(self):
         return [n for n in range(0, int(self.peak_stress*1.05), 1)]
     
     def generate_hooke_strain(self):
-        return [i/self.E for i in self.generate_hooke_stess()]
+        return [i/self.E for i in self.generate_hooke_stress()]
 
-@InstanceTracker
-class Results (PeakStressMat): 
-    pass #pamiętaj by uzupelnic
+
+#class Results(PeakStressMat): 
+#    pass #pamiętaj by uzupelnic
 
 
 def generate_chart(Y=Mat("2024-T72", 470, 300, 11, 71000)):
 
     ultimate_elongation = [0., 1.1*max(Y.generate_r_o_strain())]
     ultimate_stress = [Y.Ftu, Y.Ftu]
+    peak_strain = peak_stress/Y.E
+
 
     pylab.title("Stress-Strain")
-    pylab.plot(Y.generate_r_o_strain(),Y.generate_stress_list(),'y', Y.generate_true_strain(),Y.generate_true_stress(),'b',ultimate_elongation,ultimate_stress,'r')
-    pylab.legend(['Engineering Stress-Strain','True Stress-Strain','Ultimate Stregnth'], loc='lower right', shadow=True, fontsize='medium', title='Legend')
-    pylab.ylim(0., 1.1*max(Y.generate_true_stress()))
+    pylab.plot(Y.generate_r_o_strain(),Y.generate_stress_list(),'y')
+    pylab.plot(Y.generate_hooke_strain(),Y.generate_hooke_stress(),'b')
+    pylab.plot(ultimate_elongation,ultimate_stress,'r')
+    pylab.plot(peak_strain, peak_stress, 'g', marker=".", markersize=10)
+    pylab.legend(['Engineering Stress-Strain','True Stress-Strain','Ultimate Stregnth','Peak Stress Point'], loc='lower right', shadow=True, fontsize='medium', title='Legend')
+    pylab.ylim(0., 1.1*max(Y.generate_hooke_stress()))
     pylab.ylabel("Stress [MPa]")
     pylab.xlim(0., 1.1*max(Y.generate_r_o_strain()))
     pylab.xlabel("Strain [-]") 
@@ -144,8 +149,9 @@ while True:
             while True:
                 try:
                     peak_stress = float (input("Give linear peak stress (MPa): "))
-                    mat_wp= PeakStressMat("2024", 440., 340., 8., 70000., peak_stress)
-                    print(f"case no.: {PeakStressMat._counter} ")
+                    mat_wp= PeakStressMat(peak_stress, "2024", 440., 340., 8., 70000. )
+                    print(f"case no.: {PeakStressMat.counter} ")
+                    generate_chart (mat_wp)
                     break
                 except ValueError:
                     print ("ValueError: Invalid Value.\nTry once again.\n")
