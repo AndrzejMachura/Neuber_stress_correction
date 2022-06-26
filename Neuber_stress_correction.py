@@ -21,12 +21,18 @@ class PeakStressMat(Mat):
     def __init__(self, peak, *arguments):
         Mat.__init__(self, *arguments)
         self.peak_stress= peak 
+        self.peak_strain = self.peak_stress/self.E
+        self._strain_energy = self.peak_stress*self.peak_strain
     
     def generate_hooke_stress(self):
         return [n for n in range(0, int(self.peak_stress*1.05), 1)]
     
     def generate_hooke_strain(self):
         return [i/self.E for i in self.generate_hooke_stress()]
+    
+    def generate_constant_strain_energy (self):
+        return [self._strain_energy/i for i in self.generate_hooke_stress()[1::]]
+
 
 
 #class Results(PeakStressMat): 
@@ -37,15 +43,16 @@ def generate_chart(Y=Mat("2024-T72", 470, 300, 11, 71000)):
 
     ultimate_elongation = [0., 1.1*max(Y.generate_r_o_strain())]
     ultimate_stress = [Y.Ftu, Y.Ftu]
-    peak_strain = peak_stress/Y.E
+    
 
 
     pylab.title("Stress-Strain")
-    pylab.plot(Y.generate_r_o_strain(),Y.generate_stress_list(),'y')
-    pylab.plot(Y.generate_hooke_strain(),Y.generate_hooke_stress(),'b')
-    pylab.plot(ultimate_elongation,ultimate_stress,'r')
-    pylab.plot(peak_strain, peak_stress, 'g', marker=".", markersize=10)
-    pylab.legend(['Engineering Stress-Strain','True Stress-Strain','Ultimate Stregnth','Peak Stress Point'], loc='lower right', shadow=True, fontsize='medium', title='Legend')
+    pylab.plot(Y.generate_r_o_strain(),Y.generate_stress_list(),'b')
+    pylab.plot(Y.generate_hooke_strain(),Y.generate_hooke_stress(),'#778899')
+    pylab.plot(ultimate_elongation,ultimate_stress,'#DAA520')
+    pylab.plot(Y.peak_strain, Y.peak_stress, 'g', marker=".", markersize=10)
+    pylab.plot(Y.generate_constant_strain_energy(), Y.generate_hooke_stress()[1::], 'k', linestyle = 'dashed')
+    pylab.legend(['Engineering Stress-Strain','Linear Hooke\'s Stress-Strain','Ultimate Stregnth','Peak Stress Point', 'Constant Strain Energy'], loc='lower right', shadow=True, fontsize='medium', title='Legend')
     pylab.ylim(0., 1.1*max(Y.generate_hooke_stress()))
     pylab.ylabel("Stress [MPa]")
     pylab.xlim(0., 1.1*max(Y.generate_r_o_strain()))
