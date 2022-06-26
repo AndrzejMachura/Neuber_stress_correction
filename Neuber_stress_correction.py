@@ -1,4 +1,5 @@
 from unittest.mock import call
+from numpy import append
 import pylab
 from os import system
 from isotropic_material import Mat
@@ -32,11 +33,45 @@ class PeakStressMat(Mat):
     
     def generate_constant_strain_energy (self):
         return [self._strain_energy/i for i in self.generate_hooke_stress()[1::]]
+    
+    def calculate_corrected_stress(self):
 
+        def plastic_strain(stress):
+            return stress/self.E + (stress/self.H)**(1/self.n)
+        
+        _mi_list =[]
+        for s in self.generate_stress_list():
+            
+            _pl_str_en=s*plastic_strain(s)
+            _mi_list.append(abs(self._strain_energy-_pl_str_en))
 
+        _mi = min(_mi_list)
+        _mi_index = _mi_list.index(_mi)
 
-#class Results(PeakStressMat): 
-#    pass #pamiętaj by uzupelnic
+        _current_stress = self.generate_stress_list()[_mi_index]
+
+        if self._strain_energy-_current_stress*plastic_strain(_current_stress)>0:
+
+            _current_stress = self.generate_stress_list()[_mi_index]
+            _next_stress = self.generate_stress_list()[_mi_index+1]
+            _current_mi = self._strain_energy-_current_stress*plastic_strain(_current_stress)
+            _next_mi = self._strain_energy-_next_stress*plastic_strain(_next_stress)
+        else:
+            _current_stress = self.generate_stress_list()[_mi_index-1]
+            _next_stress = self.generate_stress_list()[_mi_index]
+            _current_mi = self._strain_energy-_current_stress*plastic_strain(_current_stress)
+            _next_mi = self._strain_energy-_next_stress*plastic_strain(_next_stress)        
+
+    #two points nearest of root of the equations are lineary connected
+    #root of the linear equation has adequate accurency for engineering usage  
+        _a = (_current_mi-_next_mi )/(_current_stress-_next_stress)
+        _b = (_current_mi-_a*_current_stress)
+
+        _root_stress = -(_b/_a)
+        _root_strain = plastic_strain(_root_stress) 
+        _root = (_root_strain,_root_stress)
+
+        return _root
 
 
 def generate_chart(Y=Mat("2024-T72", 470, 300, 11, 71000)):
@@ -45,13 +80,14 @@ def generate_chart(Y=Mat("2024-T72", 470, 300, 11, 71000)):
     ultimate_stress = [Y.Ftu, Y.Ftu]
     
 
-
+    pylab.figure(figsize=(10,5))
     pylab.title("Stress-Strain")
     pylab.plot(Y.generate_r_o_strain(),Y.generate_stress_list(),'b')
     pylab.plot(Y.generate_hooke_strain(),Y.generate_hooke_stress(),'#778899')
     pylab.plot(ultimate_elongation,ultimate_stress,'#DAA520')
     pylab.plot(Y.peak_strain, Y.peak_stress, 'g', marker=".", markersize=10)
     pylab.plot(Y.generate_constant_strain_energy(), Y.generate_hooke_stress()[1::], 'k', linestyle = 'dashed')
+    pylab.plot(Y.calculate_corrected_stress()[0], Y.calculate_corrected_stress()[1], 'r', marker=".", markersize=10)
     pylab.legend(['Engineering Stress-Strain','Linear Hooke\'s Stress-Strain','Ultimate Stregnth','Peak Stress Point', 'Constant Strain Energy'], loc='lower right', shadow=True, fontsize='medium', title='Legend')
     pylab.ylim(0., 1.1*max(Y.generate_hooke_stress()))
     pylab.ylabel("Stress [MPa]")
@@ -156,7 +192,9 @@ while True:
             while True:
                 try:
                     peak_stress = float (input("Give linear peak stress (MPa): "))
-                    mat_wp= PeakStressMat(peak_stress, "2024", 440., 340., 8., 70000. )
+                    mat_wp= PeakStressMat(peak_stress, "2024", 440., 340., 8., 70000.)
+                    x = mat_wp.calculate_corrected_stress()
+                    print(f"strain = {x[0]}, stress = {x[1]} ")
                     print(f"case no.: {PeakStressMat.counter} ")
                     generate_chart (mat_wp)
                     break
