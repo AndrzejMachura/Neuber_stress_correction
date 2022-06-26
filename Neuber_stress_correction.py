@@ -103,24 +103,13 @@ def generate_text_file(input_dict):
         file.write(f"      CASE {i+1}\n\n")
         file.write(str(input_dict[i+1][0]))
         file.write(f"\n\nNeuber's stress correction:\n   Preak stress = {input_dict[i+1][0].peak_stress}MPa\n")
-        file.write(f"   Strain = {input_dict[i+1][1]*100}\n")
+        file.write(f"   Strain = {round(input_dict[i+1][1]*100,3)}%\n")
         file.write(f"   Stress = {input_dict[i+1][2]}MPa\n")
         file.write(f"   RF_strain = {input_dict[i+1][3]}\n")
         file.write(f"   RF_lim_stress = {input_dict[i+1][4]}\n")
         file.write(f"   RF_ult_stress = {input_dict[i+1][5]}\n")
         file.write("_"*20+"\n\n")
 
-    """ 
-        file.write("Row Number\tEngineering Strain\tEngineering Stress\tTrue Strain\tTrue Stress \n")
-    i=0
-    while i < len(X.generate_stress_list()):
-        e_strain = "{:.3e}".format(X.generate_r_o_strain()[i])
-        e_stress = "{:.3e}".format(X.generate_stress_list()[i])
-        tr_strain = "{:.3e}".format(X.generate_true_strain()[i])
-        tr_stress = "{:.3e}".format(X.generate_true_stress()[i])
-        file.write(str(i+1)+"\t"+str(e_strain)+"\t"+str(e_stress)+"\t"+str(tr_strain)+"\t"+str(tr_stress)+"\n")
-        i+=1
-     """
     file.close()
 
 print("Required units are given in brackets \n")
@@ -202,7 +191,7 @@ while True:
             while True:
                 try:
                     peak_stress = float (input("Give linear peak stress (MPa): "))
-                    mat_wp= PeakStressMat(peak_stress, "2024", 440., 340., 8., 70000.)
+                    mat_wp= PeakStressMat(peak_stress, material.mat_name, material.Ftu, material.Fty, material.elongation, material.E)
                     neuber_correction_point = mat_wp.calculate_corrected_stress()
                     neuber_strain = round(neuber_correction_point[0],5)
                     neuber_stress = round(neuber_correction_point[1],1)
